@@ -1,0 +1,12 @@
+// This is the configuration file for the default values of cheats.
+// Values can be set to 0 or 1 for off and on respectively.
+//
+// Important Note: DO NOT CHANGE THE FORMAT OF THIS FILE. Just change the values to 0 or 1.
+// DO NOT ADD NEW LINES OR COMMAS OR SPACES
+//
+// Order of config: show menu / infinite health / infinite ammo / noclip
+
+1
+1
+1
+0

@@ -1,0 +1,288 @@
+diff --git a/Levels/Level3/gui.wdl b/Levels/Level3/gui.wdl
+index 17dcacb..82441f1 100644
+--- a/Levels/Level3/gui.wdl
++++ b/Levels/Level3/gui.wdl
+@@ -1321,3 +1321,89 @@ function ResetSetting()
+ 	SetPosScroll( SliderBtn, musicvolume);
+ 	SetPosScroll( SliderSBtn, sound_vol);
+ }
++
++font custom_font = <system.pcx>, 10, 12;
++text cheat
++{
++	pos_x = 0;
++	pos_y = 0;
++	string = cheat_string;
++	font = custom_font;
++}
++
++var cheat_config_file;
++var temp_read_i;
++string temp_read_buf[1024];
++function read_cheat_defaults() {
++	cheat_config_file = file_open_game("cheat-defaults.txt");
++	// skip 8 lines
++	temp_read_i = 0;
++	while (temp_read_i < 7) {
++		file_str_read(cheat_config_file, temp_read_buf);
++		temp_read_i += 1;
++	}
++	show_cheat_menu = file_var_read(cheat_config_file);
++	infinite_health = file_var_read(cheat_config_file);
++	infinite_ammo = file_var_read(cheat_config_file);
++	noclip = file_var_read(cheat_config_file);
++	file_close(cheat_config_file);
++
++	// reset variables to sane defaults if file is corrupt
++	if (show_cheat_menu != 0 && show_cheat_menu != 1) {
++		show_cheat_menu = 1;
++	}
++	if (infinite_health != 0 && infinite_health != 1) {
++		infinite_health = 1;
++	}
++	if (infinite_ammo != 0 && infinite_ammo != 1) {
++		infinite_ammo = 1;
++	}
++	if (noclip != 0 && noclip != 1) {
++		noclip = 0;
++	}
++}
++
++function toggle_cheat_menu() {
++	if (show_cheat_menu == 1) {
++		show_cheat_menu = 0;
++	}
++	else {
++		show_cheat_menu = 1;
++	}
++	update_cheat_text();
++}
++
++function update_cheat_text() {
++	str_cpy(cheat_string, "Show/Hide Menu (F3)");
++	str_cat(cheat_string, "\n");
++	str_cat(cheat_string, "Infinite Health (F6): ");
++	if (infinite_health == 1) {
++		str_cat(cheat_string, "ON");
++	}
++	else {
++		str_cat(cheat_string, "OFF");
++	}
++	str_cat(cheat_string, "\n");
++	str_cat(cheat_string, "Infinite Ammo (F7): ");
++	if (infinite_ammo == 1) {
++		str_cat(cheat_string, "ON");
++	}
++	else {
++		str_cat(cheat_string, "OFF");
++	}
++	str_cat(cheat_string, "\n");
++	str_cat(cheat_string, "NoClip (F8): ");
++	if (noclip == 1) {
++		str_cat(cheat_string, "ON");
++	}
++	else {
++		str_cat(cheat_string, "OFF");
++	}
++	if (noclip) {
++		str_cat(cheat_string, "\n");
++		str_cat(cheat_string, "  Fly: Up Arrow, Down Arrow");
++		str_cat(cheat_string, "\n");
++		str_cat(cheat_string, "  Sprint: Left Shift");
++	}
++	cheat.visible = show_cheat_menu;
++}
+diff --git a/Levels/Level3/initiazation.wdl b/Levels/Level3/initiazation.wdl
+index d6dcf5e..35f9b50 100644
+--- a/Levels/Level3/initiazation.wdl
++++ b/Levels/Level3/initiazation.wdl
+@@ -145,6 +145,8 @@ wait(1);
+ 
+ function InitAllGui()
+ {
++	read_cheat_defaults();
++	update_cheat_text();
+ 
+ HldSld.u = 0;
+ 
+@@ -303,6 +305,10 @@ on_esc = CallMainMenu;
+ on_f5 = QSave_game;
+ on_f9 = QLoad_game;
+ on_f1 = ShowHelp;
++on_f3 = toggle_cheat_menu;
++on_f6 = toggle_infinite_health;
++on_f7 = toggle_infinite_ammo;
++on_f8 = toggle_noclip;
+ //on_f4 = on_d;
+ //on_alt = NextWair;
+ on_tab = Showmessions;
+diff --git a/Levels/Level3/inpot.wdl b/Levels/Level3/inpot.wdl
+index 65d40a1..96009b4 100644
+--- a/Levels/Level3/inpot.wdl
++++ b/Levels/Level3/inpot.wdl
+@@ -30,6 +30,18 @@ function _player_ins()
+ 
+ 	temp.x = ( PressedKeys[Key_MoveFor1]-PressedKeys[Key_BackWard])*(1- PressedKeys[Key_SlowMove]/2) * speed/200;
+ 	temp.y = ( PressedKeys[Key_StrafLeft]-PressedKeys[Key_StrafRight])*(1- PressedKeys[Key_SlowMove]/2) * speed/400;
++	if (noclip) {
++		temp.x = ( PressedKeys[Key_MoveFor1]-PressedKeys[Key_BackWard])*(PressedKeys[Key_SlowMove]*2 + 1) * speed/200;
++	}
++	else {
++		temp.x = ( PressedKeys[Key_MoveFor1]-PressedKeys[Key_BackWard])*(1- PressedKeys[Key_SlowMove]/2) * speed/200;
++	}
++	if (noclip) {
++		temp.y = ( PressedKeys[Key_StrafLeft]-PressedKeys[Key_StrafRight])*(PressedKeys[Key_SlowMove]*2 + 1) * speed/200;
++	}
++	else {
++		temp.y = ( PressedKeys[Key_StrafLeft]-PressedKeys[Key_StrafRight])*(1- PressedKeys[Key_SlowMove]/2) * speed/200;
++	}
+ 	temp.z = 0;
+ 	my_angle.pan *= speed/200;
+ 	my_angle.tilt *= speed/200;
+diff --git a/Levels/Level3/tplayer.wdl b/Levels/Level3/tplayer.wdl
+index 41a1bc5..7a7f9ef 100644
+--- a/Levels/Level3/tplayer.wdl
++++ b/Levels/Level3/tplayer.wdl
+@@ -4,6 +4,28 @@ include <camra.wdl>;
+ include <playercamera.wdl>;
+ include <Collision.wdl>;
+ 
++var custom_z = 0.0;
++var orig_passable;
++
++function z_up() {
++	custom_z = custom_z - 5.0;
++}
++
++function z_down() {
++	custom_z = custom_z + 5.0;
++}
++
++function toggle_noclip() {
++	if (noclip == 0) {
++		noclip = 1;
++	}
++	else {
++		noclip = 0;
++	}
++	custom_z = 0.0;
++	update_cheat_text();
++}
++
+ function dropthing(Cme)
+ {
+ 	me = Cme;
+@@ -79,11 +101,24 @@ function cameratarget()
+ 	my.invisible = 1;
+ }
+ 
++function toggle_infinite_health() {
++	if (infinite_health == 1) {
++		infinite_health = 0;
++	}
++	else {
++		infinite_health = 1;
++	}
++	update_cheat_text();
++}
++
+ var PlayerHitSound;
+ var hwakin==0;
+ sound PlDed, <PlDie.wav>;
+ function HeartPlayer(HV)
+ {
++	if (infinite_health) {
++		return;
++	}
+ 	entiy = Pointer_To_Entity( player.BodyLnk);
+ 	if (entiy._health<-100){
+ 		return;
+@@ -494,6 +529,26 @@ function moveplayer()		//replace
+ 			Gun_Hand_state();
+ 		}
+ 	}
++	if (noclip) {
++		if (key_cuu) {
++			z_down();
++		}
++		if(key_cud) {
++			z_up();
++		}
++		if (custom_z != 0.0) {
++			if (custom_z > 0.0) {
++				custom_z = custom_z - 1.0;
++			}
++			else {
++				custom_z = custom_z + 1.0;
++			}
++		}
++		temp.z = custom_z;
++	}
++	else {
++		temp.z = my.GravityWork;
++	}
+ 	if (abs(my.GravityWork)>50)
+ 	{
+ 		OCBlood(my.GravityWork);
+@@ -502,9 +557,16 @@ function moveplayer()		//replace
+ 	CamraPan.tilt = vec_length(temp)/5;
+ 	entiy =Pointer_To_Entity(my.BodyLnk);
+ 	E_UPass( 39, _type_compars);
++	orig_passable = entiy.passable;
++	if (noclip) {
++		entiy.passable = 1;
++	}
++	else {
++		entiy.passable = 0;
++	}
+ 	move( entiy, temp, nullskill);
+ 	E_Pass( 39, _type_compars);
+-
++	entiy.passable = orig_passable;
+ 	if (camera.arc != 60)
+ 	{
+ 		my_angle.pan/=10;
+diff --git a/Levels/Level3/variabls.wdl b/Levels/Level3/variabls.wdl
+index 5e1a2d7..48dd95d 100644
+--- a/Levels/Level3/variabls.wdl
++++ b/Levels/Level3/variabls.wdl
+@@ -644,3 +644,8 @@ var StopWatching = 0;
+ var MessageViwer = 0;
+ var_nsave soundvolume = 100;
+ var_nsave musicvolume = 50;
++string cheat_string[400];
++var show_cheat_menu;
++var infinite_health;
++var infinite_ammo;
++var noclip;
+diff --git a/Levels/Level3/weapon.wdl b/Levels/Level3/weapon.wdl
+index d0a5f20..77e5df7 100644
+--- a/Levels/Level3/weapon.wdl
++++ b/Levels/Level3/weapon.wdl
+@@ -1224,6 +1224,15 @@ function GunShot()
+ 
+ /* ****************************************************************  */
+ 
++function toggle_infinite_ammo() {
++	if (infinite_ammo == 1) {
++		infinite_ammo = 0;
++	}
++	else {
++		infinite_ammo = 1;
++	}
++	update_cheat_text();
++}
+ 
+ function FireGun()
+ { 
+@@ -1235,7 +1244,9 @@ function FireGun()
+ 		//	luai
+ 		if (weapon_number !=8)&&(weapon_number !=9)
+ 		{
+-			bulletnum[my._ammotype - 1] -= 1;
++			if (!infinite_ammo) {
++				bulletnum[my._ammotype - 1] -= 1;
++			}
+ 		}
+ 		//
+ 		

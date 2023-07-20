@@ -1,0 +1,4 @@
+# Order of mods that will be applied.
+
+# copymod
+cheatmod

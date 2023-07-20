@@ -1,0 +1,177 @@
+diff --git a/Levels/Level9/gui.wdl b/Levels/Level9/gui.wdl
+index 8a0f18b..377d4b1 100644
+--- a/Levels/Level9/gui.wdl
++++ b/Levels/Level9/gui.wdl
+@@ -1391,3 +1391,71 @@ function ResetSetting()
+ 	SetPosScroll( SliderBtn, musicvolume);
+ 	SetPosScroll( SliderSBtn, sound_vol);
+ }
++
++font custom_font = <system.pcx>, 10, 12;
++text cheat
++{
++	pos_x = 0;
++	pos_y = 0;
++	string = cheat_string;
++	font = custom_font;
++}
++
++var cheat_config_file;
++var temp_read_i;
++string temp_read_buf[1024];
++function read_cheat_defaults() {
++	cheat_config_file = file_open_game("cheat-defaults.txt");
++	// skip 8 lines
++	temp_read_i = 0;
++	while (temp_read_i < 7) {
++		file_str_read(cheat_config_file, temp_read_buf);
++		temp_read_i += 1;
++	}
++	show_cheat_menu = file_var_read(cheat_config_file);
++	infinite_health = file_var_read(cheat_config_file);
++	infinite_ammo = file_var_read(cheat_config_file);
++	file_close(cheat_config_file);
++
++	// reset variables to sane defaults if file is corrupt
++	if (show_cheat_menu != 0 && show_cheat_menu != 1) {
++		show_cheat_menu = 1;
++	}
++	if (infinite_health != 0 && infinite_health != 1) {
++		infinite_health = 1;
++	}
++	if (infinite_ammo != 0 && infinite_ammo != 1) {
++		infinite_ammo = 1;
++	}
++}
++
++function toggle_cheat_menu() {
++	if (show_cheat_menu == 1) {
++		show_cheat_menu = 0;
++	}
++	else {
++		show_cheat_menu = 1;
++	}
++	update_cheat_text();
++}
++
++function update_cheat_text() {
++	str_cpy(cheat_string, "Show/Hide Menu (F3)");
++	str_cat(cheat_string, "\n");
++	str_cat(cheat_string, "Infinite Health (F6): ");
++	if (infinite_health == 1) {
++		str_cat(cheat_string, "ON");
++	}
++	else {
++		str_cat(cheat_string, "OFF");
++	}
++	str_cat(cheat_string, "\n");
++	str_cat(cheat_string, "Infinite Ammo (F7): ");
++	if (infinite_ammo == 1) {
++		str_cat(cheat_string, "ON");
++	}
++	else {
++		str_cat(cheat_string, "OFF");
++	}
++	cheat.visible = show_cheat_menu;
++}
+diff --git a/Levels/Level9/initiazation.wdl b/Levels/Level9/initiazation.wdl
+index def738c..bcec0ac 100644
+--- a/Levels/Level9/initiazation.wdl
++++ b/Levels/Level9/initiazation.wdl
+@@ -146,6 +146,8 @@ wait(1);
+ 
+ function InitAllGui()
+ {
++	read_cheat_defaults();
++	update_cheat_text();
+ 
+ HldSld.u = 0;
+ SSave1Btn.LeaderId = SSave1Txt;
+@@ -303,6 +305,9 @@ on_esc = CallMainMenu;
+ on_f5 = QSave_game;
+ on_f9 = QLoad_game;
+ on_f1 = ShowHelp;
++on_f3 = toggle_cheat_menu;
++on_f6 = toggle_infinite_health;
++on_f7 = toggle_infinite_ammo;
+ //on_f4 = on_d;
+ //on_alt = NextWair;
+ on_tab = Showmessions;
+diff --git a/Levels/Level9/tplayer.wdl b/Levels/Level9/tplayer.wdl
+index 8108d92..2e19c11 100644
+--- a/Levels/Level9/tplayer.wdl
++++ b/Levels/Level9/tplayer.wdl
+@@ -64,6 +64,16 @@ function MoveCollision()
+ 
+ }
+ 
++function toggle_infinite_health() {
++	if (infinite_health == 1) {
++		infinite_health = 0;
++	}
++	else {
++		infinite_health = 1;
++	}
++	update_cheat_text();
++}
++
+ var PlayerHitSound;
+ var hwakin==0;
+ sound PlDed, <PlDie.wav>;
+@@ -74,6 +84,9 @@ function HeartPlayer(HV)
+ 		return;
+ 	}
+ 
++	if (infinite_health) {
++		return;
++	}
+ 	entiy = Pointer_To_Entity( player.BodyLnk);
+ 	if (entiy._health<-100){
+ 		return;
+diff --git a/Levels/Level9/variabls.wdl b/Levels/Level9/variabls.wdl
+index 4add2b2..697e737 100644
+--- a/Levels/Level9/variabls.wdl
++++ b/Levels/Level9/variabls.wdl
+@@ -729,4 +729,9 @@ var hPlayerWins = 0;
+ 
+ 
+ var_nsave soundvolume = 100;
+-var_nsave musicvolume = 50;
+\ No newline at end of file
++var_nsave musicvolume = 50;
++
++string cheat_string[400];
++var show_cheat_menu;
++var infinite_health;
++var infinite_ammo;
+diff --git a/Levels/Level9/weapon.wdl b/Levels/Level9/weapon.wdl
+index 765d8f1..3dd78fd 100644
+--- a/Levels/Level9/weapon.wdl
++++ b/Levels/Level9/weapon.wdl
+@@ -1848,6 +1848,15 @@ function GunShot()
+ 
+ /* ****************************************************************  */
+ 
++function toggle_infinite_ammo() {
++	if (infinite_ammo == 1) {
++		infinite_ammo = 0;
++	}
++	else {
++		infinite_ammo = 1;
++	}
++	update_cheat_text();
++}
+ 
+ function FireGun()
+ { 
+@@ -1858,7 +1867,9 @@ function FireGun()
+ 	{
+ 		if (weapon_number !=15)&&(weapon_number !=16)
+ 		{
+-			bulletnum[my._ammotype - 1] -= 1;
++			if (!infinite_ammo) {
++				bulletnum[my._ammotype - 1] -= 1;
++			}
+ 		}
+ 		
+ 	}
