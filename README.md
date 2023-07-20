@@ -12,6 +12,8 @@ The level files themselves are made up of assets and source code. The acknex eng
 The way modding is done is by patching and injecting custom code into `Under_Siege.exe` so that it executes a python script before right before executing the engine and after extracing the files. The script acts as a mod-manager and runs mod script files that can modify the level files as desired.
 
 # Installing mods and cheatmod
+https://youtu.be/qXDEkitAJ2w
+
 Need:
 - [Python 3](https://www.python.org/downloads/):
     - **Important**: python **must** be added to PATH. You must select that option when installing it.
@@ -31,6 +33,8 @@ https://drive.google.com/file/d/13aj0IPf6tgRpDzSywooiEo6h7KRTTbWw/view?usp=shari
 - https://www.mediafire.com/file/33tni88hfpny6td/Full_Version.rar
 
 # Patching Under\_Siege.exe (inject.asm)
+https://youtu.be/T4pUgvMr_YY
+
 Need:
 - [Netwide Assembler (NASM)](https://www.nasm.us): used for assembling `inject.asm` into a pure binary blob. The code is also written in its syntax.
 - [CFF Explorer](https://ntcore.com/?page_id=388): used to add a new code section to `Under_Siege.exe` and expand it.
